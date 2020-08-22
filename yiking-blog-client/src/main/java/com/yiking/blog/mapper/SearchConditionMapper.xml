@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yiking.blog.mapper.SearchConditionMapper">
+    <insert id="addNewSearchCondition" parameterType="com.yiking.blog.entities.SearchCondition">
+        INSERT INTO searchcondition SET searchCondition=#{searchCondition},frequency=1
+    </insert>
+    <update id="updateSearchCondition">
+        UPDATE searchcondition SET frequency=frequency+1 WHERE searchcondition=#{searchCondition}
+    </update>
+
+    <select id="getSearchConditionByCondition" resultType="com.yiking.blog.entities.SearchCondition">
+        SELECT * FROM searchcondition WHERE searchcondition=#{searchCondition}
+    </select>
+    <select id="getAllSearchCondition" resultType="com.yiking.blog.entities.SearchCondition">
+        SELECT * FROM searchcondition ORDER BY frequency DESC LIMIT 0,20
+    </select>
+</mapper>

@@ -1,0 +1,23 @@
+package com.yiking.blog.mapper;
+
+import com.yiking.blog.entities.Tags;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+/**
+ * Created by  yiking 2020/07/03
+ */
+@Mapper
+public interface TagsMapper {
+    int deleteTagsByAid(Long aid);
+
+    int saveTags(@Param("tags") String[] tags);
+
+    List<Long> getTagsIdByTagName(@Param("tagNames") String[] tagNames);
+
+    List<Tags> getTagsByAid(@Param("aid") Long aid);
+
+    int saveTags2ArticleTags(@Param("tagIds") List<Long> tagIds, @Param("aid") Long aid);
+}

@@ -1,0 +1,60 @@
+server:
+  port: 8003
+spring:
+ application:
+  name: yiking-blog
+ cloud:
+  nacos:
+    discovery:
+      server-addr: localhost:8848
+  sentinel:
+    transport:
+      dashboard: localhost:8080
+      port: 8719  #默认8719，假如被占用了会自动从8719开始依次+1扫描。直至找到未被占用的端口
+    datasource:
+      ds1:
+        nacos:
+           server-addr: localhost:8848
+           dataId: yiking-blog-sentinel
+           groupId: DEFAULT_GROUP
+           data-type: json
+           rule-type: flow
+ redis:
+  host: 192.168.56.10
+
+
+
+
+ datasource:
+   type: com.alibaba.druid.pool.DruidDataSource
+   url: jdbc:mysql:///blogtest01?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+   username: root
+   password: 123456
+   initialSize: 5
+   minIdle: 5
+   maxActive: 20
+   maxWait: 60000
+   timeBetweenEvictionRunsMillis: 60000
+   minEvictableIdleTimeMillis: 300000
+   validationQuery: SELECT 1 FROM DUAL
+   testWhileIdle: true
+   testOnBorrow: false
+   testOnReturn: false
+   poolPreparedStatements: true
+  #   配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+   filters: stat,wall
+   maxPoolPreparedStatementPerConnectionSize: 20
+   useGlobalDataSourceStat: true
+   connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
+
+
+
+
+management:
+ endpoints:
+  web:
+   exposure:
+    include: '*'
+
+##mybatis-plus:
+#   mapper-locations: classpath:**/*Mapper.xml

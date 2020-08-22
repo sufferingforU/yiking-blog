@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yiking.blog.mapper.ArticleMapper">
+    <insert id="addNewArticle" parameterType="com.yiking.blog.entities.Article" useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO article SET title=#{title},mdContent=#{mdContent},htmlContent=#{htmlContent},summary=#{summary},cid=#{cid},uid=#{uid},publishDate=#{publishDate},state=#{state},editTime=#{editTime},repeatRate=#{repeatRate},priority=0
+    </insert>
+    <select id="getAllArticles" resultType="com.yiking.blog.entities.Article">
+        SELECT title,summary,uid,id,pageview,publishDate  FROM article WHERE state=1 ORDER BY priority DESC,repeatRate,publishdate DESC  LIMIT #{startPage},6
+    </select>
+    <select id="getAllArticlesOrderByPublishDate" resultType="com.yiking.blog.entities.Article">
+        SELECT title,summary,uid,id,pageview,publishDate  FROM article  WHERE state=1 ORDER BY publishdate DESC LIMIT #{startPage},6
+    </select>
+    <select id="getAllArticles2" resultType="com.yiking.blog.entities.Article">
+        SELECT title,summary,uid,id,pageview,publishDate  FROM article  WHERE state=1
+    </select>
+    <update id="pvIncrement" parameterType="Long">
+        UPDATE article set pageView=pageView+1 WHERE id=#{aid}
+    </update>
+    <update id="updateArticle" parameterType="com.yiking.blog.entities.Article">
+        UPDATE article SET
+        title=#{title},mdContent=#{mdContent},htmlContent=#{htmlContent},summary=#{summary},cid=#{cid},editTime=#{editTime}
+        <if test="state==1">
+            ,state=1
+        </if>
+        <if test="publishDate!=null">
+            ,publishDate=#{publishDate}
+        </if>
+        WHERE id=#{id}
+    </update>
+    <select id="getArticleByState" resultType="com.yiking.blog.entities.Article">
+        SELECT a.id,a.`title`,a.`editTime`,a.`pageView`,a.`state`,u.`nickname`,c.`cateName`,a.uid FROM article a,user
+        u,category c WHERE a.`cid`=c.`id` AND a.`uid`=u.`id`
+        <if test="state!=-2">
+            and a.uid=#{uid}
+        </if>
+        <if test="state!=-1 and state!=-2">
+            and a.state=#{state}
+        </if>
+        <if test="state==-2">
+            and a.state=1
+        </if>
+        <if test="keywords!=null">
+            AND title LIKE concat('%',#{keywords},'%')
+        </if>
+        ORDER BY a.editTime DESC limit #{start},#{count};
+    </select>
+    <!--<select id="getArticleByStateByAdmin" resultType="com.yiking.blog.entities.Article">-->
+    <!--SELECT a.id,a.`title`,a.`editTime`,a.`pageView`,a.`state`,u.`nickname`,c.`cateName`,a.uid FROM article a,user-->
+    <!--u,category c WHERE a.`cid`=c.`id` AND a.`uid`=u.`id` and a.state=1-->
+    <!--<if test="keywords!=null">-->
+    <!--AND title LIKE concat('%',#{keywords},'%')-->
+    <!--</if>-->
+    <!--ORDER BY a.editTime DESC limit #{start},#{count};-->
+    <!--</select>-->
+    <select id="getArticleCountByState" resultType="int">
+        SELECT count(*) FROM article
+        <where>
+            <if test="state!=-1">
+                AND state=#{state}
+            </if>
+            <if test="uid!=null">
+                AND uid=#{uid}
+            </if>
+            <if test="keywords!=null">
+                AND title LIKE concat('%',#{keywords},'%')
+            </if>
+        </where>
+    </select>
+    <update id="updateArticleState">
+        UPDATE article SET state=#{state} WHERE id IN
+        <foreach collection="aids" item="aid" separator="," open="(" close=")">
+            #{aid}
+        </foreach>
+    </update>
+    <update id="updateArticleStateById">
+        UPDATE article SET state=#{state} WHERE id = #{articleId}
+    </update>
+    <delete id="deleteArticleById">
+        DELETE FROM article WHERE id IN
+        <foreach collection="aids" item="aid" open="(" close=")" separator=",">
+            #{aid}
+        </foreach>
+    </delete>
+    <select id="getArticleById" parameterType="Long" resultMap="BaseResultMap">
+        SELECT a.*,t.`tagName`,t.`id` AS tid,c.`cateName` FROM article a LEFT JOIN article_tags ats ON a.`id`=ats.`aid` LEFT JOIN tags t ON ats.`tid`=t.`id` LEFT JOIN user u ON a.`uid`=u.`id` LEFT JOIN category c ON a.`cid`=c.`id` WHERE a.id=#{aid}
+    </select>
+
+    <resultMap id="BaseResultMap" type="com.yiking.blog.entities.Article">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="cid" property="cid"/>
+        <result column="uid" property="uid"/>
+        <result column="publishDate" property="publishDate"/>
+        <result column="editTime" property="editTime"/>
+        <result column="state" property="state"/>
+        <result column="pageView" property="pageView"/>
+        <result column="mdContent" property="mdContent"/>
+        <result column="htmlContent" property="htmlContent"/>
+        <result column="summary" property="summary"/>
+        <result column="nickname" property="nickname"/>
+        <result column="cateName" property="cateName"/>
+        <result column="repeatRate" property="repeatRate"/>
+        <collection property="tags" ofType="com.yiking.blog.entities.Tags" column="tagName">
+            <id property="id" column="tid"/>
+            <result property="tagName" column="tagName"/>
+        </collection>
+    </resultMap>
+
+    <insert id="pvStatisticsPerDay">
+        INSERT INTO pv(countDate,pv,uid) SELECT CURRENT_DATE(),totalPv-pv,t.`uid` FROM pvview p,totalpvview t WHERE p.`uid`=t.`uid`
+    </insert>
+
+    <select id="getCategories" resultType="String" parameterType="long">
+        SELECT countDate from pv WHERE uid=#{uid} ORDER by countDate limit 7
+    </select>
+    <select parameterType="long" id="getDataStatistics" resultType="int">
+        SELECT pv from pv WHERE uid=#{uid} ORDER by countDate limit 7
+    </select>
+    <select id="getArticleCount" resultType="java.lang.Integer">select count(*) from article WHERE state=1</select>
+    <select id="searchArticle" resultMap="BaseResultMap">
+    SELECT title,summary,uid,id,pageview,publishDate FROM article WHERE (title like #{condition} or summary like #{condition})  and state=1 ORDER BY priority DESC , repeatRate LIMIT 0,40 </select>
+    <select id="getAllArticlesOrderByComments" resultType="com.yiking.blog.entities.Article">
+    SELECT COUNT(c.aid), c.aid ,a.title,a.summary,a.uid,a.id,a.pageview,a.publishDate  FROM comments c,article a WHERE a.id=c.aid  GROUP BY c.aid ORDER BY COUNT(c.aid) DESC LIMIT #{startPage},6
+    </select>
+    <select id="getAllArticlesOrderByComments2" resultType="com.yiking.blog.entities.Article">
+    SELECT COUNT(c.aid), c.aid ,a.title,a.summary,a.uid,a.id,a.pageview,a.publishDate FROM comments c,article a WHERE a.id=c.aid  GROUP BY c.aid ORDER BY COUNT(c.aid) DESC
+    </select>
+    <select id="getAllArticlesOrderByRates" resultType="com.yiking.blog.entities.Article">
+    SELECT sum(c.rate), c.aid ,a.title,a.summary,a.uid,a.id,a.pageview,a.publishDate FROM articlerate c,article a where a.id=c.aid  group by c.aid ORDER BY sum(c.rate) desc limit #{startPage},6</select>
+    <select id="getAllArticlesOrderByRates2" resultType="com.yiking.blog.entities.Article">
+    SELECT sum(c.rate), c.aid ,a.title,a.summary,a.uid,a.id,a.pageview,a.publishDate FROM articlerate c,article a where a.id=c.aid  group by c.aid ORDER BY sum(c.rate) desc</select>
+    <select id="searchArticlesOrderByPublishDate" resultType="com.yiking.blog.entities.Article">
+        SELECT title,summary,uid,id,pageview,publishDate  FROM article  WHERE state=1 and (title like #{condition} or summary like #{condition}) ORDER BY publishdate DESC
+    </select>
+    <select id="searchArticlesOrderByComments" resultType="com.yiking.blog.entities.Article">
+    SELECT COUNT(c.aid), c.aid ,a.title,a.summary,a.uid,a.id,a.pageview,a.publishDate FROM comments c,article a WHERE a.id=c.aid and (a.title like #{condition} or a.summary like #{condition} ) GROUP BY c.aid ORDER BY COUNT(c.aid) DESC
+    </select>
+    <select id="searchArticlesOrderByRates" resultType="com.yiking.blog.entities.Article">
+    SELECT sum(c.rate), c.aid ,a.title,a.summary,a.uid,a.id,a.pageview,a.publishDate FROM articlerate c,article a where a.id=c.aid and (a.title like #{condition} or a.summary like #{condition} )  group by c.aid ORDER BY sum(c.rate) desc
+    </select>
+    <select id="getUserArticleSum" resultType="java.lang.Integer">
+        SELECT IFNULL(count(*),0) FROM article WHERE uid=#{uid} and state=1;
+    </select>
+    <select id="getUserRepeatRate" resultType="java.lang.Double">
+        SELECT IFNULL(sum(repeatRate),0) FROM article WHERE uid=#{uid} and state=1;
+    </select>
+    <select id="getArticlesByCid" resultType="com.yiking.blog.entities.Article">
+        SELECT title,summary,uid,id,pageview,publishDate FROM article WHERE cid=#{cid} AND state=1 ORDER BY priority DESC
+    </select>
+    <select id="getMyArticles" resultType="com.yiking.blog.entities.Article">
+SELECT title,summary,uid,id,pageview,publishDate FROM article WHERE uid=#{uid} AND state=1 ORDER BY priority DESC</select>
+</mapper>
